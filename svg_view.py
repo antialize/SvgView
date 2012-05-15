@@ -66,8 +66,16 @@ class SvgWidget(QtSvg.QSvgWidget):
                 (pos.x() - self.width()/2)*self.scale + self.center_x, 
                 (pos.y() - self.height()/2)*self.scale + self.center_y))
 
-    def wheelEvent(self, evt):
+    def wheelEvent(self, evt):      
+        dx = evt.pos().x() - self.width()/2
+        dy = evt.pos().y() - self.height()/2
+        center_x = self.center_x + dx*self.scale
+        center_y = self.center_y + dy*self.scale
         self.scale = self.scale * 1.0025**(-evt.delta());
+        self.center_x = center_x - dx*self.scale
+        self.center_y = center_y - dy*self.scale
+        
+        
         self.updateViewBox(self.size())
         self.updateLocation(evt.pos())
         self.repaint()
