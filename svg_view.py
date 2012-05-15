@@ -34,12 +34,22 @@ class SvgWidget(QtSvg.QSvgWidget):
         self.updateViewBox(self.size())
         self.repaint()
         
+    def reload(self, path=None):
+        QtSvg.QSvgWidget.load(self, self.path)
+        self.defViewBox = self.renderer().viewBoxF()
+        self.updateViewBox(self.size())
+        
     def resizeEvent(self, evt):
         self.updateViewBox( evt.size())
         QtSvg.QSvgWidget.resizeEvent(self, evt)
         
     def __init__(self, path):
         QtSvg.QSvgWidget.__init__(self)
+        self.path = path
+        self.watch = QtCore.QFileSystemWatcher(self)
+        self.watch.addPath(self.path)
+        self.watch.fileChanged.connect(self.reload)
+
         self.setMouseTracking(True)
         self.ds = None
         self.scale = 0
@@ -101,6 +111,10 @@ class MainWindow(QtGui.QMainWindow):
         if not self.tabs.currentWidget(): return
         self.tabs.currentWidget().center()
 
+    def reload(self):
+        if not self.tabs.currentWidget(): return
+        self.tabs.currentWidget().reload()
+
     def nextTab(self):
         if not self.tabs.currentWidget(): return
         self.tabs.setCurrentIndex( (self.tabs.currentIndex() + 1)%self.tabs.count());
@@ -138,6 +152,9 @@ class MainWindow(QtGui.QMainWindow):
         self.actionClose.setShortcuts(QtGui.QKeySequence.Close)
         self.actionCenter = QtGui.QAction(self)
         self.actionCenter.setShortcuts(QtGui.QKeySequence(tr("Space")));
+        self.actionReload = QtGui.QAction(self)
+        self.actionReload.setShortcuts(QtGui.QKeySequence(tr("F5")));
+
         self.actionNext = QtGui.QAction(self)
         self.actionNext.setShortcuts(QtGui.QKeySequence(tr("Page Down")));
         self.actionPrev = QtGui.QAction(self)
@@ -148,12 +165,14 @@ class MainWindow(QtGui.QMainWindow):
         self.menuFile.addAction(self.actionClose)
         self.menuFile.addAction(self.actionQuit)
         self.menuEdit.addAction(self.actionCenter)
+        self.menuEdit.addAction(self.actionReload)
         self.menuEdit.addAction(self.actionNext)
         self.menuEdit.addAction(self.actionPrev)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
 
         self.actionCenter.triggered.connect(self.center)
+        self.actionReload.triggered.connect(self.reload)
         self.actionNext.triggered.connect(self.nextTab)
         self.actionPrev.triggered.connect(self.prevTab)
         self.actionQuit.triggered.connect(self.close)
@@ -167,6 +186,7 @@ class MainWindow(QtGui.QMainWindow):
         self.actionClose.setText(tr("&Close Tab"))
         self.actionQuit.setText(tr("&Quit"))
         self.actionCenter.setText(tr("&Center"))
+        self.actionReload.setText(tr("&Reload"))
         self.actionNext.setText(tr("&Next Tab"))
         self.actionPrev.setText(tr("&Prev Tab"))
         
