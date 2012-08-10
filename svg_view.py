@@ -15,6 +15,111 @@
 
 from PyQt4 import QtSvg,QtCore,QtGui,Qt
 import sys, signal, os
+import jvg
+from argparse import ArgumentParser
+
+class JvgWidget(QtGui.QGraphicsView):
+    def updateLocation(self, pos):
+        pass
+
+    def updateViewBox(self):
+        #w = self.scale * size.width()
+        #h = self.scale * size.height()
+        #r = QtCore.QRectF(self.center_x - w/2, self.center_y - h/2,
+        #                 w, h)
+        #p=self.mapToScene(self.center_x, self.center_y)
+        #self.centerOn(float(p.x()), float(p.y()))
+       
+        #t = QtGui.QTransform()
+        #self.setTransform(t)
+        #self.fitInView(r)
+        #self.scale(1,-1)
+        #self.setSceneRect(r)
+        #self.updateSceneRect(r)
+        pass
+
+    def center(self):
+        #self.scale=max(float(self.defViewBox.width())/self.width(),
+        #float(self.defViewBox.height())/self.height())
+        #self.center_x = self.defViewBox.center().x()
+        #self.center_y = self.defViewBox.center().y()
+        #self.updateViewBox(self.size())
+        #self.repaint()
+        pass
+    
+    def __init__(self, path):
+        scene = QtGui.QGraphicsScene()
+
+        self.ds = None
+        self.scale = 1
+        self.center_x = 0
+        self.center_y = 0
+        self.defViewBox = (0, 0, 1, 1)
+        
+        f = open(path, "r")
+        l1 = f.readline()
+        if l1 != "jvg 1 0\n": print "bad"
+        pen = QtGui.QPen()
+        for line in f:
+            line=line.strip().split(" ")
+            if line[0] == 'width':
+                #pen.setWidth(float(line[1]))
+                pass
+            elif line[0] == 'color':
+                pen.setColor(QtGui.QColor(int(line[1]), int(line[2]), int(line[3])))
+            elif line[0] == 'line' and line[1] == '2':
+                scene.addLine(float(line[2]), float(line[3]), float(line[4]), float(line[5]), pen)
+            elif line[0] == 'rect':
+                scene.addRect(float(line[1]), float(line[2]), 
+                              float(line[3]) - float(line[1]), float(line[4]) - float(line[2]), pen)
+            elif line[0] == 'viewBox':
+                self.defViewBox = QtCore.QRectF(
+                    float(line[1]), float(line[2]), 
+                    float(line[3]) - float(line[1]), float(line[4]) - float(line[2]))
+            else:
+                print line
+        QtGui.QGraphicsView.__init__(self, scene)
+        self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform);
+
+        #self.center()
+        self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
+        
+
+
+        
+    def wheelEvent(self, evt):      
+        #dx = evt.pos().x() - self.width()/2
+        #dy = evt.pos().y() - self.height()/2
+        #center_x = self.center_x + dx*self.scale
+        #center_y = self.center_y + dy*self.scale
+        s=1.0025**(-evt.delta())
+        QtGui.QGraphicsView.scale(self, s, s)
+        #self.scale = self.scale * 1.0025**(-evt.delta());
+        #self.center_x = center_x - dx*self.scale
+        #self.center_y = center_y - dy*self.scale
+        #self.updateViewBox()
+        #self.updateLocation(evt.pos())
+        #self.repaint()
+
+    # def mousePressEvent(self, evt):
+    #     self.ds = evt.posF()
+    #     self.start_center_x = self.center_x
+    #     self.start_center_y = self.center_y
+        
+    # def mouseMoveEvent(self, evt):
+    #     self.updateLocation(evt.posF())
+    #     if not self.ds: return
+    #     dx = evt.posF().x() - self.ds.x()
+    #     dy = evt.posF().y() - self.ds.y()
+    #     self.center_x = self.start_center_x - dx*self.scale
+    #     self.center_y = self.start_center_y - dy*self.scale
+    #     self.updateViewBox(self.size())
+    #     self.repaint()
+
+    # def mouseReleaseEvent(self, evt):
+    #     self.mouseMoveEvent(evt)
+    #     self.ds = None
+
 
 class SvgWidget(QtSvg.QSvgWidget):
     location_changed = QtCore.pyqtSignal(QtCore.QPointF)
@@ -107,9 +212,12 @@ class MainWindow(QtGui.QMainWindow):
         self.statusbar.showMessage("%f %f"%(point.x(), point.y()))
 
     def load(self, path):
-        svg = SvgWidget(path)
-        svg.location_changed.connect(self.showLocation)
-        self.tabs.setCurrentIndex( self.tabs.addTab(svg, os.path.basename("%s"%path)))
+        if os.path.splitext(str(path))[1] == '.jvg':
+            view = JvgWidget(path)
+        else:
+            view = SvgWidget(path)
+        #view.location_changed.connect(self.showLocation)
+        self.tabs.setCurrentIndex( self.tabs.addTab(view, os.path.basename("%s"%path)))
         
     def closeTab(self):
         if not self.tabs.currentWidget(): return
@@ -204,6 +312,18 @@ def handleIntSignal(signum, frame):
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     
+    parser = ArgumentParser(description="Display SVG files.")
+    parser.add_argument("-v", "--version", 
+                        help="show version information", default=False, action='store_const', const=True);
+    parser.add_argument("documents", nargs='*')
+    
+    
+#opt_parser.add_option("-q", dest="quickly", action="store_true",
+#    help="Do it quickly (default=False)")
+#(options, args) = opt_
+
+    parser.parse_args(map(str, app.arguments()))
+
     if  '-h' in app.arguments()[1:] or '--help' in app.arguments()[1:]:
         print "Usage: svg_view.py <path_to_svg_file>?"
         exit
