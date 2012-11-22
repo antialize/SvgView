@@ -15,7 +15,6 @@
 
 from PyQt4 import QtSvg,QtCore,QtGui,Qt
 import sys, signal, os
-import jvg
 from argparse import ArgumentParser
 
 class JvgWidget(QtGui.QGraphicsView):
@@ -76,6 +75,8 @@ class JvgWidget(QtGui.QGraphicsView):
                 self.defViewBox = QtCore.QRectF(
                     float(line[1]), float(line[2]), 
                     float(line[3]) - float(line[1]), float(line[4]) - float(line[2]))
+            elif line[0] == 'point':
+                scene.addEllipse(float(line[1])-1, float(line[2])-1, 2, 2, pen, pen.color())
             else:
                 print line
         QtGui.QGraphicsView.__init__(self, scene)
@@ -92,7 +93,7 @@ class JvgWidget(QtGui.QGraphicsView):
         #dy = evt.pos().y() - self.height()/2
         #center_x = self.center_x + dx*self.scale
         #center_y = self.center_y + dy*self.scale
-        s=1.0025**(-evt.delta())
+        s=1.0025**(evt.delta())
         QtGui.QGraphicsView.scale(self, s, s)
         #self.scale = self.scale * 1.0025**(-evt.delta());
         #self.center_x = center_x - dx*self.scale
