@@ -66,8 +66,13 @@ class JvgWidget(QtGui.QGraphicsView):
                 pass
             elif line[0] == 'color':
                 pen.setColor(QtGui.QColor(int(line[1]), int(line[2]), int(line[3])))
-            elif line[0] == 'line' and line[1] == '2':
-                scene.addLine(float(line[2]), float(line[3]), float(line[4]), float(line[5]), pen)
+            elif line[0] == 'line':
+                n = int(line[1])
+                if (len(line) != 2 + 2 * n):
+                    print "Line error: ", line
+                    continue
+                for i in range(1, n):
+                    scene.addLine(float(line[2*i]), float(line[2*i+1]), float(line[2*i+2]), float(line[2*i+3]), pen)
             elif line[0] == 'rect':
                 scene.addRect(float(line[1]), float(line[2]), 
                               float(line[3]) - float(line[1]), float(line[4]) - float(line[2]), pen)
