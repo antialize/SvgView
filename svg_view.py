@@ -16,6 +16,11 @@
 from PyQt4 import QtSvg,QtCore,QtGui,Qt
 import sys, signal, os
 from argparse import ArgumentParser
+from random import uniform
+s=1.0/1.0e10
+
+def m(i):
+    return float(i)*s+uniform(-1,1)
 
 class JvgWidget(QtGui.QGraphicsView):
     def updateLocation(self, pos):
@@ -59,6 +64,9 @@ class JvgWidget(QtGui.QGraphicsView):
         l1 = f.readline()
         if l1 != "jvg 1 0\n": print "bad"
         pen = QtGui.QPen()
+
+        pen.setCosmetic(True)
+        pen.setCapStyle(QtCore.Qt.RoundCap)
         for line in f:
             line=line.strip().split(" ")
             if line[0] == 'width':
@@ -72,25 +80,31 @@ class JvgWidget(QtGui.QGraphicsView):
                     print "Line error: ", line
                     continue
                 for i in range(1, n):
-                    scene.addLine(float(line[2*i]), float(line[2*i+1]), float(line[2*i+2]), float(line[2*i+3]), pen)
+                    scene.addLine(m(line[2*i]), m(line[2*i+1]), m(line[2*i+2]), m(line[2*i+3]), pen)
             elif line[0] == 'rect':
                 scene.addRect(float(line[1]), float(line[2]), 
                               float(line[3]) - float(line[1]), float(line[4]) - float(line[2]), pen)
             elif line[0] == 'viewBox':
                 self.defViewBox = QtCore.QRectF(
-                    float(line[1]), float(line[2]), 
-                    float(line[3]) - float(line[1]), float(line[4]) - float(line[2]))
+                    float(line[1])*s, float(line[2])*s, 
+                    float(line[3])*s - float(line[1])*s, float(line[4])*s - float(line[2])*s)
             elif line[0] == 'point':
                 scene.addEllipse(float(line[1])-1, float(line[2])-1, 2, 2, pen, pen.color())
             else:
                 print line
         QtGui.QGraphicsView.__init__(self, scene)
-        self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform);
-
+        self.setRenderHints(QtGui.QPainter.Antialiasing | QtGui.QPainter.HighQualityAntialiasing)
+# | QtGui.QPainter.SmoothPixmapTransform);
+        print self.defViewBox
         #self.center()
         self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag)
-        
 
+        #t = QtGui.QTransform()
+        #self.setTransform(t)
+        self.fitInView(self.defViewBox, QtCore.Qt.KeepAspectRatio)
+        #self.defViewBox)
+        #print self.defViewBox
+        #print scene.sceneRect()
 
         
     def wheelEvent(self, evt):      
@@ -107,8 +121,9 @@ class JvgWidget(QtGui.QGraphicsView):
         #self.updateLocation(evt.pos())
         #self.repaint()
 
-    # def mousePressEvent(self, evt):
-    #     self.ds = evt.posF()
+    #def mousePressEvent(self, evt):
+    #    print self.mapToScene(evt.pos())
+        
     #     self.start_center_x = self.center_x
     #     self.start_center_y = self.center_y
         
